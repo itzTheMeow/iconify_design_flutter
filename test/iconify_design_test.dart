@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:iconify_design/iconify_design.dart';
-import 'package:iconify_design/src/shared/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 const _cachedSvg = '''
@@ -18,6 +17,7 @@ const _cachedSvg = '''
 class _FakeCacheAdapter implements HttpClientAdapter {
   final String responseData;
   int requestCount = 0;
+  RequestOptions? lastRequestOptions;
 
   _FakeCacheAdapter(this.responseData);
 
@@ -28,6 +28,7 @@ class _FakeCacheAdapter implements HttpClientAdapter {
     Future<void>? cancelFuture,
   ) {
     requestCount++;
+    lastRequestOptions = options;
     return Future.value(ResponseBody.fromString(responseData, 200));
   }
 
@@ -114,7 +115,11 @@ void main() {
     IconifyClientService.cacheGet = (key) => memoryCache[key];
     IconifyClientService.cacheSet = (key, data) => memoryCache[key] = data;
 
-    final dio = Dio(BaseOptions(baseUrl: "$api/"));
+    const customBaseUrl = 'https://custom.example.com/';
+    const customTimeout = Duration(seconds: 5);
+    final dio = Dio(
+      BaseOptions(baseUrl: customBaseUrl, receiveTimeout: customTimeout),
+    );
     final adapter = _FakeCacheAdapter(_cachedSvg);
     dio.httpClientAdapter = adapter;
     IconifyClientService.dio = dio;
@@ -129,6 +134,8 @@ void main() {
     expect(memoryCache['icon:test:custom'], isNotNull);
     expect(memoryCache['icon:test:custom'], _cachedSvg);
     expect(adapter.requestCount, 1);
+    expect(adapter.lastRequestOptions!.baseUrl, customBaseUrl);
+    expect(adapter.lastRequestOptions!.receiveTimeout, customTimeout);
 
     await tester.pumpWidget(
       const MaterialApp(home: IconifyIcon(icon: 'test:custom')),

@@ -111,7 +111,7 @@ void main() {
   IconifyClientService.dio = Dio(
     BaseOptions(
       baseUrl: "https://iconify.yourdomain.com/", // custom iconify API base
-      receiveTimeout: Duration(duration: 60), // longer timeout than default
+      receiveTimeout: Duration(seconds: 60), // longer timeout than default
     ),
   );
 
